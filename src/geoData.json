@@ -1,0 +1,35 @@
+{
+    "type": "FeatureCollection",
+    "features": [
+        {
+            "type": "Feature",
+            "geometry": {
+                "type": "Point",
+                "coordinates": [
+                    24.000906986937594,
+                    49.80259820083478
+                ]
+            },
+            "properties": {
+                "title": "Marker1",
+                "description": "marker1 description",
+                "score": 0
+            }
+        },
+        {
+            "type": "Feature",
+            "geometry": {
+                "type": "Point",
+                "coordinates": [
+                    23.959021610961372,
+                    49.80922878085707
+                ]
+            },
+            "properties": {
+                "title": "Marker2",
+                "description": "marker2 description",
+                "score": 0
+            }
+        }
+    ]
+}

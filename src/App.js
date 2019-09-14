@@ -6,94 +6,106 @@ import { point, featureCollection } from '@turf/helpers';
 import './App.css';
 
 const accessToken = "pk.eyJ1IjoiZ3J5Z29yaWkiLCJhIjoiY2swZ3QzdXhuMDQzdTNpbGpoY24zaTY4diJ9.El3swWKoso1paibm4U_F3Q";
-const currentLocationCoords = [24.000906986937594, 49.80259820083478];
-
-var geojson = {
-  type: 'FeatureCollection',
-  features: [
+const geojson = {
+  "type": "FeatureCollection",
+  "features": [
     {
-      type: 'Feature',
-      geometry: {
-        type: 'Point',
-        coordinates: currentLocationCoords
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          24.000906986937594,
+          49.80259820083478
+        ]
       },
-      properties: {
-        title: 'Marker1',
-        description: 'marker1 description',
-        score: 0,
+      "properties": {
+        "title": "Marker1",
+        "description": "marker1 description",
+        "score": 0
       }
     },
     {
-      type: 'Feature',
-      geometry: {
-        type: 'Point',
-        coordinates: [23.959021610961372, 49.80922878085707]
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          23.959021610961372,
+          49.80922878085707
+        ]
       },
-      properties: {
-        title: 'Marker2',
-        description: 'marker2 description',
-        score: 0,
+      "properties": {
+        "title": "Marker2",
+        "description": "marker2 description",
+        "score": 0
       }
     }
   ]
-};
+}
 
 class App extends React.Component {
-  state = {
-    currentLocation: currentLocationCoords,
-    markers: geojson.features,
-    selectedMarkerIndex: null,
+  constructor(props) {
+    super(props);
+
+    this.state = {
+      center: [24.000906986937594, 49.80259820083478],
+      zoom: [11],
+      markers: null,
+      selectedMarker: null,
+      selectedMarkerIndex: null,
+    }
+
+    this.Mapbox = ReactMapboxGl({
+      minZoom: 8,
+      maxZoom: 15,
+      accessToken
+    });
+  }
+
+  componentDidMount() {
+    const mapData = geojson;
+
+    this.setState({
+      markers: mapData.features
+    })
   }
 
   onAddMarker(coords) {
-    // debugger;
-    this.setState({
-      selectedMarker: null,
-    });
-
     if (coords) {
       const { lng, lat } = coords;
+      const newMarker = {
+        type: 'Feature',
+        geometry: {
+          type: 'Point',
+          coordinates: [lng, lat],
+        },
+        properties: {
+          title: "",
+          description: "",
+          score: 0,
+        }
+      }
 
       this.setState(prevState => ({
-        markers: [...prevState.markers, 
-          {
-            type: 'Feature',
-            geometry: {
-              type: 'Point',
-              coordinates: [lng, lat]
-            }
-          }
-        ]
+        markers: [...prevState.markers, newMarker],
+        selectedMarker: newMarker,
+        center: coords,
+        zoom: [14],
       }));
     }
   }
 
-  onMarkerHover(map) {
-    const currentPosition = map.feature;
-    const markerIndex = this._findNearestMarkerIndex(currentPosition);
-
-    if (markerIndex >= 0) {
-      this.setState({
-        selectedMarkerIndex: markerIndex,
-      })
-    }
-  }
-
-  _findNearestMarkerIndex(currentPosition) {
-    const { markers } = this.state;
-    const selectedPoint = point(currentPosition.geometry.coordinates);
-    const markersCollections = featureCollection(markers);
-    const nearest = nearestPoint(selectedPoint, markersCollections);
+  getMarkerIndex() {
+    const { markers, selectedMarker } = this.state;
     const markersCoords = markers.map(marker => marker.geometry.coordinates);
 
     return markersCoords.findIndex(coords => {
-      return coords[0] === nearest.geometry.coordinates[0] &&
-        coords[1] === nearest.geometry.coordinates[1]
+      return coords[0] === selectedMarker.geometry.coordinates[0] &&
+        coords[1] === selectedMarker.geometry.coordinates[1]
     });
   }
 
   onRemoveMarker() {
-    const { selectedMarkerIndex } = this.state;
+    const selectedMarkerIndex = this.getMarkerIndex();
 
     if (selectedMarkerIndex >= 0) {
       const newMarkers = [...this.state.markers];
@@ -107,12 +119,13 @@ class App extends React.Component {
 
   onClosePopup() {
     this.setState({
-      selectedMarkerIndex: null,
+      selectedMarker: null,
     })
   }
-  
+
   onChangeMarkerScore(value) {
-    const { markers, selectedMarkerIndex } = this.state;
+    const { markers } = this.state;
+    const selectedMarkerIndex = this.getMarkerIndex();
 
     if (selectedMarkerIndex >= 0) {
       const newMarkers = [...markers];
@@ -124,61 +137,77 @@ class App extends React.Component {
     }
   }
 
+  onMarkerHover(mapEvent, marker) {
+    mapEvent.map.getCanvas().style.cursor = 'pointer';
+
+    this.setState({
+      selectedMarker: marker,
+    })
+  }
+
+  onMarkerNotHover(mapEvent) {
+    mapEvent.map.getCanvas().style.cursor = '';
+  }
+
+  onDrag() {
+    if (this.state.selectedMarker) {
+      this.setState({ selectedMarker: null });
+    }
+  };
+
   render() {
-    console.log('markers: ', this.state.markers);
+    const { markers } = this.state;
+
     return (
       <div className="App">
         <header className="App-header">
           <h2>Mapbox app</h2>
         </header>
-        {this.renderMarkersInfo()}
-        {this.renderMap()}
+        {markers &&
+          <div>
+            {this.renderMarkersInfo()}
+            {this.renderMap()}
+          </div>
+        }
       </div>
     )
   };
-  
+
   renderMap() {
-    const Map = ReactMapboxGl({
-      accessToken,
-    });
-    const { selectedMarkerIndex } = this.state;
+    const { center, zoom, selectedMarker } = this.state;
+    const Mapbox = this.Mapbox;
 
     return (
-      <Map
+      <Mapbox
         style="mapbox://styles/mapbox/streets-v11"
         containerStyle={{
           height: "50vh",
           width: "50vw"
         }}
-        center={this.state.currentLocation}
-        onClick={(map, e) => this.onAddMarker(e.lngLat)}>
-          {/* <GeoJSONLayer 
-            data={geojson}
-            symbolLayout={{
-              "text-field": "{place}",
-              "text-font": ["Open Sans Semibold", "Arial Unicode MS Bold"],
-              "text-offset": [0, 0.6],
-              "text-anchor": "top"
-            }}/> */}
+        center={center}
+        zoom={zoom}
+        flyToOptions={{speed: 0.8 }}
+        onClick={(e, mapEvent) => this.onAddMarker(mapEvent.lngLat)}
+        onDrag={() => this.onDrag()}
+        >
           <Layer
             type="symbol"
-            layout={{ "icon-image": "castle-15"}}
-            >
-              {this.renderMarkers()}
+            layout={{ "icon-image": "castle-15" }}
+          >
+            {this.renderMarkers()}
           </Layer>
-          {selectedMarkerIndex >= 0 && this.renderMarkerPopup()}
-      </Map>
+          {selectedMarker && this.renderMarkerPopup()}
+      </Mapbox>
     )
   }
 
   renderMarkerPopup() {
-    const { markers, selectedMarkerIndex } = this.state;
-    const selectedMarker = markers[selectedMarkerIndex];
+    const { selectedMarker } = this.state;
 
     if (!selectedMarker) {
       return null;
     }
-    
+
     const renderOptions = () => {
       let options = [];
 
@@ -188,20 +217,22 @@ class App extends React.Component {
       return options;
     }
 
-    return(
+    return (
       <Popup
         coordinates={selectedMarker.geometry.coordinates}
         offset={{
           'bottom': [0, -10],
         }}
-        >
-        <h4>Marker</h4>
-        <p>Set marker score</p>
-        <select
-          value={selectedMarker.properties.score}
-          onChange={(e) => this.onChangeMarkerScore(e.target.value)}>
-          {renderOptions()}
-        </select>
+      >
+        <h4>Marker info</h4>
+        <label>Score: 
+          <select
+            value={selectedMarker.properties.score}
+            onChange={(e) => this.onChangeMarkerScore(e.target.value)}>
+            {renderOptions()}
+          </select>
+        </label>
+        <br />
         <button onClick={() => this.onClosePopup()}>Close</button>
         <button onClick={() => this.onRemoveMarker()}>Remove</button>
       </Popup>
@@ -213,10 +244,11 @@ class App extends React.Component {
       this.state.markers.map((marker) => {
         return (
           <Feature
-            draggable={true}
+            draggable={false}
             coordinates={marker.geometry.coordinates}
             properties={marker.properties}
-            onMouseEnter={(e) => this.onMarkerHover(e)}
+            onMouseEnter={(e) => this.onMarkerHover(e, marker)}
+            onMouseLeave={(e) => this.onMarkerNotHover(e, marker)}
           />
         );
       })
