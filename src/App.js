@@ -42,7 +42,7 @@ class App extends React.Component {
   state = {
     currentLocation: currentLocationCoords,
     markers: geojson.features,
-    selectedMarker: null,
+    selectedMarkerIndex: null,
   }
 
   onAddMarker(coords) {
@@ -69,32 +69,35 @@ class App extends React.Component {
   }
 
   onMarkerHover(map) {
-    if (this.state.selectedMarker) {
-      return;
-    } else{
-      console.info('hovered marker', map.feature)
+    const currentPosition = map.feature;
+    const markerIndex = this._findNearestMarkerIndex(currentPosition);
+
+    if (markerIndex >= 0) {
       this.setState({
-        selectedMarker: map.feature,
+        selectedMarkerIndex: markerIndex,
       })
     }
   }
 
-  onRemoveMarker() {
-    const {markers, selectedMarker} = this.state;
-    
-    const selectedPoint = point(selectedMarker.geometry.coordinates);
+  _findNearestMarkerIndex(currentPosition) {
+    const { markers } = this.state;
+    const selectedPoint = point(currentPosition.geometry.coordinates);
     const markersCollections = featureCollection(markers);
     const nearest = nearestPoint(selectedPoint, markersCollections);
-
     const markersCoords = markers.map(marker => marker.geometry.coordinates);
-    const markerToRemoveIndex = markersCoords.findIndex(coords => {
+
+    return markersCoords.findIndex(coords => {
       return coords[0] === nearest.geometry.coordinates[0] &&
         coords[1] === nearest.geometry.coordinates[1]
     });
+  }
 
-    if (markerToRemoveIndex >= 0) {
+  onRemoveMarker() {
+    const { selectedMarkerIndex } = this.state;
+
+    if (selectedMarkerIndex >= 0) {
       const newMarkers = [...this.state.markers];
-      newMarkers.splice(markerToRemoveIndex, 1);
+      newMarkers.splice(selectedMarkerIndex, 1);
       this.setState({
         markers: newMarkers
       })
@@ -104,8 +107,21 @@ class App extends React.Component {
 
   onClosePopup() {
     this.setState({
-      selectedMarker: null,
+      selectedMarkerIndex: null,
     })
+  }
+  
+  onChangeMarkerScore(value) {
+    const { markers, selectedMarkerIndex } = this.state;
+
+    if (selectedMarkerIndex >= 0) {
+      const newMarkers = [...markers];
+      newMarkers[selectedMarkerIndex].properties.score = value;
+
+      this.setState({
+        markers: newMarkers
+      })
+    }
   }
 
   render() {
@@ -114,10 +130,8 @@ class App extends React.Component {
       <div className="App">
         <header className="App-header">
           <h2>Mapbox app</h2>
-          <p>
-            Total markers amount: {this.state.markers.length}
-          </p>
         </header>
+        {this.renderMarkersInfo()}
         {this.renderMap()}
       </div>
     )
@@ -127,6 +141,7 @@ class App extends React.Component {
     const Map = ReactMapboxGl({
       accessToken,
     });
+    const { selectedMarkerIndex } = this.state;
 
     return (
       <Map
@@ -151,27 +166,53 @@ class App extends React.Component {
             >
               {this.renderMarkers()}
           </Layer>
-          {this.state.selectedMarker && <Popup
-            coordinates={this.state.selectedMarker.geometry.coordinates}
-            offset={{
-              'bottom': [0, -10],
-            }}
-            >
-            <h4>Marker</h4>
-            <p>score: 0</p>
-            <button onClick={() => this.onClosePopup()}>Close</button>
-            <button onClick={() => this.onRemoveMarker()}>Remove</button>
-          </Popup>}
+          {selectedMarkerIndex >= 0 && this.renderMarkerPopup()}
       </Map>
+    )
+  }
+
+  renderMarkerPopup() {
+    const { markers, selectedMarkerIndex } = this.state;
+    const selectedMarker = markers[selectedMarkerIndex];
+
+    if (!selectedMarker) {
+      return null;
+    }
+    
+    const renderOptions = () => {
+      let options = [];
+
+      for (let i = 0; i <= 5; i++) {
+        options.push(<option key={i} value={i}>{i}</option>);
+      }
+      return options;
+    }
+
+    return(
+      <Popup
+        coordinates={selectedMarker.geometry.coordinates}
+        offset={{
+          'bottom': [0, -10],
+        }}
+        >
+        <h4>Marker</h4>
+        <p>Set marker score</p>
+        <select
+          value={selectedMarker.properties.score}
+          onChange={(e) => this.onChangeMarkerScore(e.target.value)}>
+          {renderOptions()}
+        </select>
+        <button onClick={() => this.onClosePopup()}>Close</button>
+        <button onClick={() => this.onRemoveMarker()}>Remove</button>
+      </Popup>
     )
   }
 
   renderMarkers() {
     return this.state.markers.length > 0 &&
-      this.state.markers.map((marker, index) => {
+      this.state.markers.map((marker) => {
         return (
           <Feature
-            key={index}
             draggable={true}
             coordinates={marker.geometry.coordinates}
             properties={marker.properties}
@@ -179,6 +220,28 @@ class App extends React.Component {
           />
         );
       })
+  }
+
+  renderMarkersInfo() {
+    return (
+      <div>
+        <h3>Markers score info:</h3>
+        <table>
+          <thead>
+            <th>
+              <td>Score</td>
+              <td>Amount</td>
+            </th>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Total</td>
+              <td>{this.state.markers.length}</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    )
   }
 }
 
