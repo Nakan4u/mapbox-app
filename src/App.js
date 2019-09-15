@@ -1,7 +1,5 @@
 import React from 'react';
 import ReactMapboxGl, { Layer, GeoJSONLayer, Feature, Popup } from "react-mapbox-gl";
-import nearestPoint from '@turf/nearest-point';
-import { point, featureCollection } from '@turf/helpers';
 
 import './App.css';
 
@@ -48,7 +46,7 @@ class App extends React.Component {
 
     this.state = {
       center: [24.000906986937594, 49.80259820083478],
-      zoom: [11],
+      zoom: [14],
       markers: null,
       selectedMarker: null,
       selectedMarkerIndex: null,
@@ -89,7 +87,7 @@ class App extends React.Component {
         markers: [...prevState.markers, newMarker],
         selectedMarker: newMarker,
         center: coords,
-        zoom: [14],
+        zoom: [15],
       }));
     }
   }
@@ -129,7 +127,7 @@ class App extends React.Component {
 
     if (selectedMarkerIndex >= 0) {
       const newMarkers = [...markers];
-      newMarkers[selectedMarkerIndex].properties.score = value;
+      newMarkers[selectedMarkerIndex].properties.score = +value;
 
       this.setState({
         markers: newMarkers
@@ -191,8 +189,32 @@ class App extends React.Component {
         onDrag={() => this.onDrag()}
         >
           <Layer
-            type="symbol"
-            layout={{ "icon-image": "castle-15" }}
+            type="circle"
+            source={{
+              type: 'vector',
+              url: 'mapbox://examples.8fgz4egr'
+            }}
+            source-layer={'sf2010'}
+            paint={{
+              // make circles larger as the user zooms from z12 to z22
+              'circle-radius': {
+                'base': 1.75,
+                'stops': [[12, 2], [22, 180]]
+              },
+              // color circles by ethnicity, using a match expression
+              // https://docs.mapbox.com/mapbox-gl-js/style-spec/#expressions-match
+              'circle-color': [
+                'match',
+                ['get', 'score'],
+                0, 'black',
+                1, 'gray',
+                2, 'red',
+                3, 'orange',
+                4, 'lime',
+                5, 'green',
+                /* other */ 'white'
+              ]
+            }}
           >
             {this.renderMarkers()}
           </Layer>
