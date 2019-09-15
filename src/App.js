@@ -21,21 +21,6 @@ const geojson = {
         "description": "marker1 description",
         "score": 0
       }
-    },
-    {
-      "type": "Feature",
-      "geometry": {
-        "type": "Point",
-        "coordinates": [
-          23.959021610961372,
-          49.80922878085707
-        ]
-      },
-      "properties": {
-        "title": "Marker2",
-        "description": "marker2 description",
-        "score": 0
-      }
     }
   ]
 }
@@ -335,7 +320,7 @@ class App extends React.Component {
 
     return (
       <div className="markersInfo">
-        <h3>Markers info:</h3>
+        <h3>Markers info</h3>
         <table>
           <thead>
             <th>
@@ -353,8 +338,19 @@ class App extends React.Component {
             </tr>
           </tfoot>
         </table>
+        <button onClick={() => this.onExportData()} disabled={!this.state.markers.length}>
+            Export Markers as JSON
+        </button>
       </div>
     )
+  }
+
+  onExportData() {
+    const { markers } = this.state;
+
+    if (markers.length) {
+      this._exportToJsonFile(markers)
+    }
   }
 
   _getMarkerIndex() {
@@ -365,6 +361,17 @@ class App extends React.Component {
       return coords[0] === selectedMarker.geometry.coordinates[0] &&
         coords[1] === selectedMarker.geometry.coordinates[1]
     });
+  }
+
+  _exportToJsonFile(data) {
+    let dataStr = JSON.stringify(data);
+    let dataUri = 'data:application/json;charset=utf-8,'+ encodeURIComponent(dataStr);
+    let exportFileDefaultName = 'geoData.json';
+    let linkElement = document.createElement('a');
+
+    linkElement.setAttribute('href', dataUri);
+    linkElement.setAttribute('download', exportFileDefaultName);
+    linkElement.click();
   }
 }
 
