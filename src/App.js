@@ -41,27 +41,27 @@ const geojson = {
 }
 const markerScoresConfig = {
   0: {
-    label: 'zero',
+    label: 'Zero',
     color: 'black'
   },
   1: {
-    label: 'one',
+    label: 'One',
     color: 'grey'
   },
   2: {
-    label: 'two',
+    label: 'Two',
     color: 'red'
   },
   3: {
-    label: 'three',
+    label: 'Three',
     color: 'orange'
   },
   4: {
-    label: 'four',
+    label: 'Four',
     color: 'lime'
   },
   5: {
-    label: 'five',
+    label: 'Five',
     color: 'green'
   },
 }
@@ -75,7 +75,6 @@ class App extends React.Component {
       zoom: [14],
       markers: null,
       selectedMarker: null,
-      selectedMarkerIndex: null,
     }
 
     this.Mapbox = ReactMapboxGl({
@@ -121,7 +120,7 @@ class App extends React.Component {
   }
 
   onRemoveMarker() {
-    const selectedMarkerIndex = this.getMarkerIndex();
+    const selectedMarkerIndex = this._getMarkerIndex();
 
     if (selectedMarkerIndex >= 0) {
       const newMarkers = [...this.state.markers];
@@ -141,7 +140,7 @@ class App extends React.Component {
 
   onChangeMarkerScore(value) {
     const { markers } = this.state;
-    const selectedMarkerIndex = this.getMarkerIndex();
+    const selectedMarkerIndex = this._getMarkerIndex();
 
     if (selectedMarkerIndex >= 0) {
       const newMarkers = [...markers];
@@ -175,7 +174,7 @@ class App extends React.Component {
     const { markers } = this.state;
     const { lng, lat } = mapEvent.lngLat;
     const coords = [lng, lat];
-    const selectedMarkerIndex = this.getMarkerIndex();
+    const selectedMarkerIndex = this._getMarkerIndex();
 
     if (selectedMarkerIndex >= 0 && coords) {
       const newMarkers = [...markers];
@@ -197,7 +196,7 @@ class App extends React.Component {
           <h2>Mapbox app</h2>
         </header>
         {markers &&
-          <div>
+          <div className="wrapper">
             {this.renderMarkersInfo()}
             {this.renderMap()}
           </div>
@@ -213,10 +212,7 @@ class App extends React.Component {
     return (
       <Mapbox
         style="mapbox://styles/mapbox/streets-v11"
-        containerStyle={{
-          height: "50vh",
-          width: "50vw"
-        }}
+        className="mapContainer"
         center={center}
         zoom={zoom}
         flyToOptions={{speed: 0.8 }}
@@ -338,8 +334,8 @@ class App extends React.Component {
     }
 
     return (
-      <div>
-        <h3>Markers score info:</h3>
+      <div className="markersInfo">
+        <h3>Markers info:</h3>
         <table>
           <thead>
             <th>
@@ -361,7 +357,7 @@ class App extends React.Component {
     )
   }
 
-  getMarkerIndex() {
+  _getMarkerIndex() {
     const { markers, selectedMarker } = this.state;
     const markersCoords = markers.map(marker => marker.geometry.coordinates);
 
