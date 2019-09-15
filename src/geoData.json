@@ -15,21 +15,6 @@
                 "description": "marker1 description",
                 "score": 0
             }
-        },
-        {
-            "type": "Feature",
-            "geometry": {
-                "type": "Point",
-                "coordinates": [
-                    23.959021610961372,
-                    49.80922878085707
-                ]
-            },
-            "properties": {
-                "title": "Marker2",
-                "description": "marker2 description",
-                "score": 0
-            }
         }
     ]
 }

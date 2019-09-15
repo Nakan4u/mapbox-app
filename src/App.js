@@ -3,27 +3,9 @@ import ReactMapboxGl, { Layer, GeoJSONLayer, Feature, Popup } from "react-mapbox
 
 import './App.css';
 
+const geojson = require('./geoData.json');
 const accessToken = "pk.eyJ1IjoiZ3J5Z29yaWkiLCJhIjoiY2swZ3QzdXhuMDQzdTNpbGpoY24zaTY4diJ9.El3swWKoso1paibm4U_F3Q";
-const geojson = {
-  "type": "FeatureCollection",
-  "features": [
-    {
-      "type": "Feature",
-      "geometry": {
-        "type": "Point",
-        "coordinates": [
-          24.000906986937594,
-          49.80259820083478
-        ]
-      },
-      "properties": {
-        "title": "Marker1",
-        "description": "marker1 description",
-        "score": 0
-      }
-    }
-  ]
-}
+
 const markerScoresConfig = {
   0: {
     label: 'Zero',
@@ -51,12 +33,41 @@ const markerScoresConfig = {
   },
 }
 
+const mapLayerConfig = {
+  type: "circle",
+  source: {
+    type: 'vector',
+    url: 'mapbox://examples.8fgz4egr'
+  },
+  "source-layer": 'sf2010',
+  paint: {
+    // make circles larger as the user zooms from z12 to z22
+    'circle-radius': {
+      'base': 1.75,
+      'stops': [[12, 2], [22, 180]]
+    },
+    // color circles by ethnicity, using a match expression
+    // https://docs.mapbox.com/mapbox-gl-js/style-spec/#expressions-match
+    'circle-color': [
+      'match',
+      ['get', 'score'],
+      0, markerScoresConfig[0].color,
+      1, markerScoresConfig[1].color,
+      2, markerScoresConfig[2].color,
+      3, markerScoresConfig[3].color,
+      4, markerScoresConfig[4].color,
+      5, markerScoresConfig[5].color,
+      /* other */ 'white'
+    ]
+  }
+};
+
 class App extends React.Component {
   constructor(props) {
     super(props);
 
     this.state = {
-      center: [24.000906986937594, 49.80259820083478],
+      center: [24.000906986937594, 49.80259820083478], // TODO: get current location
       zoom: [14],
       markers: null,
       selectedMarker: null,
@@ -171,6 +182,14 @@ class App extends React.Component {
       })
     }
   }
+  
+  onExportData() {
+    const { markers } = this.state;
+
+    if (markers.length) {
+      this._exportToJsonFile(markers)
+    }
+  }
 
   render() {
     const { markers } = this.state;
@@ -204,36 +223,12 @@ class App extends React.Component {
         onClick={(e, mapEvent) => this.onAddMarker(mapEvent)}
         onDrag={() => this.onDrag()}
         >
-          <Layer
-            type="circle"
-            source={{
-              type: 'vector',
-              url: 'mapbox://examples.8fgz4egr'
-            }}
-            source-layer={'sf2010'}
-            paint={{
-              // make circles larger as the user zooms from z12 to z22
-              'circle-radius': {
-                'base': 1.75,
-                'stops': [[12, 2], [22, 180]]
-              },
-              // color circles by ethnicity, using a match expression
-              // https://docs.mapbox.com/mapbox-gl-js/style-spec/#expressions-match
-              'circle-color': [
-                'match',
-                ['get', 'score'],
-                0, markerScoresConfig[0].color,
-                1, markerScoresConfig[1].color,
-                2, markerScoresConfig[2].color,
-                3, markerScoresConfig[3].color,
-                4, markerScoresConfig[4].color,
-                5, markerScoresConfig[5].color,
-                /* other */ 'white'
-              ]
-            }}
-          >
+          <Layer {...mapLayerConfig}>
             {this.renderMarkers()}
           </Layer>
+          {/* <GeoJSONLayer {...mapLayerConfig} TODO: investigate how to fix this layer
+            data={geojson}
+          /> */}
           {selectedMarker && this.renderMarkerPopup()}
       </Mapbox>
     )
@@ -343,14 +338,6 @@ class App extends React.Component {
         </button>
       </div>
     )
-  }
-
-  onExportData() {
-    const { markers } = this.state;
-
-    if (markers.length) {
-      this._exportToJsonFile(markers)
-    }
   }
 
   _getMarkerIndex() {
