@@ -39,6 +39,32 @@ const geojson = {
     }
   ]
 }
+const markerScoresConfig = {
+  0: {
+    label: 'zero',
+    color: 'black'
+  },
+  1: {
+    label: 'one',
+    color: 'grey'
+  },
+  2: {
+    label: 'two',
+    color: 'red'
+  },
+  3: {
+    label: 'three',
+    color: 'orange'
+  },
+  4: {
+    label: 'four',
+    color: 'lime'
+  },
+  5: {
+    label: 'five',
+    color: 'green'
+  },
+}
 
 class App extends React.Component {
   constructor(props) {
@@ -92,16 +118,6 @@ class App extends React.Component {
         zoom: [15],
       }));
     }
-  }
-
-  getMarkerIndex() {
-    const { markers, selectedMarker } = this.state;
-    const markersCoords = markers.map(marker => marker.geometry.coordinates);
-
-    return markersCoords.findIndex(coords => {
-      return coords[0] === selectedMarker.geometry.coordinates[0] &&
-        coords[1] === selectedMarker.geometry.coordinates[1]
-    });
   }
 
   onRemoveMarker() {
@@ -225,12 +241,12 @@ class App extends React.Component {
               'circle-color': [
                 'match',
                 ['get', 'score'],
-                0, 'black',
-                1, 'gray',
-                2, 'red',
-                3, 'orange',
-                4, 'lime',
-                5, 'green',
+                0, markerScoresConfig[0].color,
+                1, markerScoresConfig[1].color,
+                2, markerScoresConfig[2].color,
+                3, markerScoresConfig[3].color,
+                4, markerScoresConfig[4].color,
+                5, markerScoresConfig[5].color,
                 /* other */ 'white'
               ]
             }}
@@ -252,8 +268,8 @@ class App extends React.Component {
     const renderOptions = () => {
       let options = [];
 
-      for (let i = 0; i <= 5; i++) {
-        options.push(<option key={i} value={i}>{i}</option>);
+      for (let i = 0; i < Object.keys(markerScoresConfig).length; i++) {
+        options.push(<option key={i} value={i}>{markerScoresConfig[i].label}</option>);
       }
       return options;
     }
@@ -297,6 +313,30 @@ class App extends React.Component {
   }
 
   renderMarkersInfo() {
+    const renderTbody = () => {
+      const result = [];
+      for (let key in markerScoresConfig) {
+        result.push(
+          <tr>
+            <td>{markerScoresConfig[key].label}</td>
+            <td>{calcScoresAmounts(key)}</td>
+          </tr>
+        )
+      }
+      return result;
+    }
+
+    const calcScoresAmounts = (score) => {
+      const { markers } = this.state;
+
+      return markers.reduce((sum, marker) => {
+        if (marker.properties.score === +score) {
+          return sum += 1;
+        }
+        return sum;
+      }, 0)
+    }
+
     return (
       <div>
         <h3>Markers score info:</h3>
@@ -308,14 +348,27 @@ class App extends React.Component {
             </th>
           </thead>
           <tbody>
-            <tr>
-              <td>Total</td>
-              <td>{this.state.markers.length}</td>
-            </tr>
+            {renderTbody()}
           </tbody>
+          <tfoot>
+            <tr>
+              <td><b>Total</b></td>
+              <td><b>{this.state.markers.length}</b></td>
+            </tr>
+          </tfoot>
         </table>
       </div>
     )
+  }
+
+  getMarkerIndex() {
+    const { markers, selectedMarker } = this.state;
+    const markersCoords = markers.map(marker => marker.geometry.coordinates);
+
+    return markersCoords.findIndex(coords => {
+      return coords[0] === selectedMarker.geometry.coordinates[0] &&
+        coords[1] === selectedMarker.geometry.coordinates[1]
+    });
   }
 }
 
