@@ -67,14 +67,16 @@ class App extends React.Component {
     })
   }
 
-  onAddMarker(coords) {
+  onAddMarker(mapEvent) {
+    const { lng, lat } = mapEvent.lngLat;
+    const coords = [lng, lat];
+
     if (coords) {
-      const { lng, lat } = coords;
       const newMarker = {
         type: 'Feature',
         geometry: {
           type: 'Point',
-          coordinates: [lng, lat],
+          coordinates: coords,
         },
         properties: {
           title: "",
@@ -153,6 +155,23 @@ class App extends React.Component {
     }
   };
 
+  onMarkerDragEnd(mapEvent) {
+    const { markers } = this.state;
+    const { lng, lat } = mapEvent.lngLat;
+    const coords = [lng, lat];
+    const selectedMarkerIndex = this.getMarkerIndex();
+
+    if (selectedMarkerIndex >= 0 && coords) {
+      const newMarkers = [...markers];
+      newMarkers[selectedMarkerIndex].geometry.coordinates = coords;
+
+      this.setState({
+        markers: newMarkers,
+        center: coords
+      })
+    }
+  }
+
   render() {
     const { markers } = this.state;
 
@@ -185,7 +204,7 @@ class App extends React.Component {
         center={center}
         zoom={zoom}
         flyToOptions={{speed: 0.8 }}
-        onClick={(e, mapEvent) => this.onAddMarker(mapEvent.lngLat)}
+        onClick={(e, mapEvent) => this.onAddMarker(mapEvent)}
         onDrag={() => this.onDrag()}
         >
           <Layer
@@ -266,11 +285,12 @@ class App extends React.Component {
       this.state.markers.map((marker) => {
         return (
           <Feature
-            draggable={false}
+            draggable={true}
             coordinates={marker.geometry.coordinates}
             properties={marker.properties}
             onMouseEnter={(e) => this.onMarkerHover(e, marker)}
             onMouseLeave={(e) => this.onMarkerNotHover(e, marker)}
+            onDragEnd={(e) => this.onMarkerDragEnd(e)}
           />
         );
       })
