@@ -1,5 +1,5 @@
 import React from 'react';
-import ReactMapboxGl, { Layer, GeoJSONLayer, Feature, Popup } from "react-mapbox-gl";
+import ReactMapboxGl, { Layer, Feature, Popup } from "react-mapbox-gl";
 
 import './App.css';
 
@@ -187,7 +187,19 @@ class App extends React.Component {
     const { markers } = this.state;
 
     if (markers.length) {
-      this._exportToJsonFile(markers)
+      this._exportToJsonFile(markers);
+    }
+  }
+  
+  onImportData(e) {
+    const reader = new FileReader();
+    const data = e.target.files && e.target.files[0];
+    debugger;
+    if (data) {
+      reader.onload = function() {
+        this.setState({ markers: JSON.parse(reader.result) });
+      }.bind(this);
+      reader.readAsText(data);
     }
   }
 
@@ -226,9 +238,6 @@ class App extends React.Component {
           <Layer {...mapLayerConfig}>
             {this.renderMarkers()}
           </Layer>
-          {/* <GeoJSONLayer {...mapLayerConfig} TODO: investigate how to fix this layer
-            data={geojson}
-          /> */}
           {selectedMarker && this.renderMarkerPopup()}
       </Mapbox>
     )
@@ -293,7 +302,7 @@ class App extends React.Component {
       const result = [];
       for (let key in markerScoresConfig) {
         result.push(
-          <tr>
+          <tr key={key}>
             <td>{markerScoresConfig[key].label}</td>
             <td>{calcScoresAmounts(key)}</td>
           </tr>
@@ -318,10 +327,10 @@ class App extends React.Component {
         <h3>Markers info</h3>
         <table>
           <thead>
-            <th>
-              <td>Score</td>
-              <td>Amount</td>
-            </th>
+            <tr>
+              <th>Score</th>
+              <th>Amount</th>
+            </tr>
           </thead>
           <tbody>
             {renderTbody()}
@@ -334,7 +343,15 @@ class App extends React.Component {
           </tfoot>
         </table>
         <button onClick={() => this.onExportData()} disabled={!this.state.markers.length}>
-            Export Markers as JSON
+            Export Markers
+        </button>
+        <button>
+          <form>
+            <label>
+              Import Markers
+              <input type="file" className="importData" onChange={(e) => this.onImportData(e)}></input>
+            </label>
+          </form>
         </button>
       </div>
     )
